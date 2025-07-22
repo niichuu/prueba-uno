@@ -4,9 +4,13 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:codespaces": "ng serve --host 0.0.0.0 --port 4200 --disable-host-check",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:headless": "ng test --watch=false --browsers=ChromeHeadless",
+    "codespaces:setup": "npm install && echo '🚀 Codespaces setup complete! Run npm run start:codespaces to begin development.'",
+    "codespaces:info": "echo '📋 Available commands:' && echo '  npm run start:codespaces - Start development server for Codespaces' && echo '  npm run test:headless - Run tests in headless mode' && echo '  npm run build - Build for production' && echo '  ng generate component <name> - Generate new component'"
   },
   "private": true,
   "dependencies": {

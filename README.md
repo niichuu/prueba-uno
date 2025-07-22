@@ -10,7 +10,9 @@ You can run this project instantly in your browser using GitHub Codespaces:
 2. Select **Codespaces** tab
 3. Click **Create codespace on main**
 4. Wait for the environment to load (npm install will run automatically)
-5. The development server will be available at the forwarded port 4200
+5. Run `./codespaces-setup.sh` for an interactive setup, or `npm run start:codespaces` to start developing
+
+📖 **Detailed Codespaces Guide**: See [CODESPACES.md](./CODESPACES.md) for complete instructions.
 
 ## 🔧 Local Development
 
