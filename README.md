@@ -2,7 +2,21 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.15.
 
-## Development server
+## 🚀 Quick Start with GitHub Codespaces
+
+You can run this project instantly in your browser using GitHub Codespaces:
+
+1. Click the **Code** button on the GitHub repository
+2. Select **Codespaces** tab
+3. Click **Create codespace on main**
+4. Wait for the environment to load (npm install will run automatically)
+5. The development server will be available at the forwarded port 4200
+
+## 🔧 Local Development
+
+## 🔧 Local Development
+
+### Development server
 
 To start a local development server, run:
 
