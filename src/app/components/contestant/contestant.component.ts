@@ -83,7 +83,14 @@ export class ContestantComponent implements OnInit, OnDestroy {
     this.checkUserAnswer();
     
     // Start game for this user
-    this.gameService.startGame(this.userId, this.userName.trim());
+    this.gameService.startGame(this.userId, this.userName.trim()).subscribe({
+      next: () => {
+        console.log('Game started successfully');
+      },
+      error: (error) => {
+        console.error('Error starting game:', error);
+      }
+    });
   }
 
   selectAnswer(optionId: string): void {
@@ -94,17 +101,22 @@ export class ContestantComponent implements OnInit, OnDestroy {
     this.selectedAnswer = optionId;
     
     // Submit answer
-    const success = this.gameService.submitAnswer(
+    this.gameService.submitAnswer(
       this.userId,
       this.userName,
       this.currentQuestion.id,
       optionId
-    );
-
-    if (success) {
-      this.hasAnswered = true;
-      this.showAnswerResult(optionId);
-    }
+    ).subscribe({
+      next: (success) => {
+        if (success) {
+          this.hasAnswered = true;
+          this.showAnswerResult(optionId);
+        }
+      },
+      error: (error) => {
+        console.error('Error submitting answer:', error);
+      }
+    });
   }
 
   private showAnswerResult(selectedOptionId: string): void {
@@ -127,15 +139,23 @@ export class ContestantComponent implements OnInit, OnDestroy {
   private checkUserAnswer(): void {
     if (!this.userId || !this.currentQuestion) return;
     
-    const userResponse = this.gameService.getUserResponse(this.userId, this.currentQuestion.id);
-    if (userResponse) {
-      this.hasAnswered = true;
-      this.selectedAnswer = userResponse.selectedOptionId;
-      this.showAnswerResult(userResponse.selectedOptionId);
-    } else {
-      this.hasAnswered = false;
-      this.answerResult = null;
-    }
+    this.gameService.getUserResponse(this.userId, this.currentQuestion.id).subscribe({
+      next: (userResponse) => {
+        if (userResponse) {
+          this.hasAnswered = true;
+          this.selectedAnswer = userResponse.selectedOptionId;
+          this.showAnswerResult(userResponse.selectedOptionId);
+        } else {
+          this.hasAnswered = false;
+          this.answerResult = null;
+        }
+      },
+      error: (error) => {
+        console.error('Error checking user answer:', error);
+        this.hasAnswered = false;
+        this.answerResult = null;
+      }
+    });
   }
 
   private generateUserId(): string {

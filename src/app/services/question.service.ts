@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, tap, map } from 'rxjs/operators';
 import { Question, QuestionOption } from '../models/question.interface';
-import { JsonStorageService } from './json-storage.service';
+import { ApiService } from './api.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,72 +11,55 @@ export class QuestionService {
   private questionsSubject = new BehaviorSubject<Question[]>([]);
   public questions$ = this.questionsSubject.asObservable();
 
-  constructor(private jsonStorage: JsonStorageService) {
+  constructor(private apiService: ApiService) {
     this.loadQuestions();
-    this.initializeDefaultQuestions();
   }
 
   private loadQuestions(): void {
-    const questions = this.jsonStorage.getData<Question>(
-      this.jsonStorage.storageKeys.QUESTIONS
-    );
-    this.questionsSubject.next(questions);
+    this.apiService.getQuestions()
+      .pipe(
+        tap(questions => this.questionsSubject.next(questions)),
+        catchError(error => {
+          console.error('Error loading questions:', error);
+          // Si falla, mantener array vacío
+          this.questionsSubject.next([]);
+          return of([]);
+        })
+      )
+      .subscribe();
   }
 
-  private initializeDefaultQuestions(): void {
-    if (this.questionsSubject.value.length === 0) {
-      this.createDefaultQuestions();
-    }
-  }
-
-  private createDefaultQuestions(): void {
-    const defaultQuestions: Omit<Question, 'id'>[] = [
-      {
-        title: "¿Cuál es la capital de Francia?",
-        points: 10,
-        options: [
-          { id: "1", text: "Madrid", isCorrect: false },
-          { id: "2", text: "París", isCorrect: true },
-          { id: "3", text: "Roma", isCorrect: false },
-          { id: "4", text: "Londres", isCorrect: false }
-        ]
-      },
-      {
-        title: "¿Cuánto es 2 + 2?",
-        points: 5,
-        options: [
-          { id: "1", text: "3", isCorrect: false },
-          { id: "2", text: "4", isCorrect: true },
-          { id: "3", text: "5", isCorrect: false },
-          { id: "4", text: "6", isCorrect: false }
-        ]
-      },
-      {
-        title: "¿Cuál es el planeta más grande del sistema solar?",
-        points: 15,
-        options: [
-          { id: "1", text: "Tierra", isCorrect: false },
-          { id: "2", text: "Marte", isCorrect: false },
-          { id: "3", text: "Júpiter", isCorrect: true },
-          { id: "4", text: "Saturno", isCorrect: false }
-        ]
-      }
-    ];
-
-    defaultQuestions.forEach(questionData => {
-      this.createQuestion(questionData);
-    });
-  }
-
-  createQuestion(questionData: Omit<Question, 'id'>): Question {
+  createQuestion(questionData: Omit<Question, 'id'>): Observable<Question> {
+    console.log('🔧 QuestionService.createQuestion iniciado:', questionData);
+    
     const question: Question = {
       ...questionData,
       id: this.generateId()
     };
 
-    this.jsonStorage.addItem(this.jsonStorage.storageKeys.QUESTIONS, question);
-    this.loadQuestions();
-    return question;
+    console.log('🆔 Pregunta con ID generado:', question);
+
+    const currentQuestions = this.questionsSubject.value;
+    const updatedQuestions = [...currentQuestions, question];
+    
+    console.log('📊 Estado actual de preguntas:', currentQuestions.length);
+    console.log('📊 Preguntas actualizadas:', updatedQuestions.length);
+    
+    return this.apiService.saveQuestions(updatedQuestions)
+      .pipe(
+        tap(() => {
+          console.log('✅ Preguntas guardadas en API exitosamente');
+          this.questionsSubject.next(updatedQuestions);
+        }),
+        map(() => {
+          console.log('📤 Retornando pregunta creada:', question);
+          return question;
+        }),
+        catchError(error => {
+          console.error('❌ Error en QuestionService.createQuestion:', error);
+          throw error;
+        })
+      );
   }
 
   getAllQuestions(): Question[] {
@@ -84,6 +68,47 @@ export class QuestionService {
 
   getQuestionById(id: string): Question | null {
     return this.questionsSubject.value.find(q => q.id === id) || null;
+  }
+
+  getQuestionByIdAsync(id: string): Observable<Question> {
+    // Primero intentar obtener de la caché local
+    const localQuestion = this.getQuestionById(id);
+    if (localQuestion) {
+      return of(localQuestion);
+    }
+    
+    // Si no está en caché, obtener del servidor
+    return this.apiService.getQuestionById(id)
+      .pipe(
+        catchError(error => {
+          console.error('Error getting question by ID:', error);
+          throw error;
+        })
+      );
+  }
+
+  saveAllQuestions(questions: Question[]): Observable<any> {
+    return this.apiService.saveQuestions(questions)
+      .pipe(
+        tap(() => {
+          this.questionsSubject.next(questions);
+        }),
+        catchError(error => {
+          console.error('Error saving questions:', error);
+          throw error;
+        })
+      );
+  }
+
+  refreshQuestions(): Observable<Question[]> {
+    return this.apiService.getQuestions()
+      .pipe(
+        tap(questions => this.questionsSubject.next(questions)),
+        catchError(error => {
+          console.error('Error refreshing questions:', error);
+          throw error;
+        })
+      );
   }
 
   getCorrectAnswer(questionId: string): QuestionOption | null {

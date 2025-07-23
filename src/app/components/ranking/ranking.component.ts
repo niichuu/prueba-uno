@@ -54,37 +54,43 @@ export class RankingComponent implements OnInit {
     }
 
     // Get all responses for this question
-    const allResponses = this.gameService.getAllResponses();
-    const questionResponses = allResponses.filter(r => r.questionId === questionId);
-    
-    // Create ranking entries
-    const rankings: RankingEntry[] = questionResponses.map(response => {
-      const question = this.currentQuestion!;
-      const correctOption = question.options.find(opt => opt.isCorrect);
-      const isCorrect = correctOption ? response.selectedOptionId === correctOption.id : false;
-      
-      return {
-        userName: response.userName,
-        selectedAnswer: response.selectedOptionText,
-        isCorrect,
-        points: isCorrect ? question.points : 0,
-        rank: 0 // Will be set after sorting
-      };
-    });
+    this.gameService.getAllResponses().subscribe({
+      next: (allResponses) => {
+        const questionResponses = allResponses.filter(r => r.questionId === questionId);
+        
+        // Create ranking entries
+        const rankings: RankingEntry[] = questionResponses.map(response => {
+          const question = this.currentQuestion!;
+          const correctOption = question.options.find(opt => opt.isCorrect);
+          const isCorrect = correctOption ? response.selectedOptionId === correctOption.id : false;
+          
+          return {
+            userName: response.userName,
+            selectedAnswer: response.selectedOptionText,
+            isCorrect,
+            points: isCorrect ? question.points : 0,
+            rank: 0 // Will be set after sorting
+          };
+        });
 
-    // Sort by points (descending) and assign ranks
-    rankings.sort((a, b) => b.points - a.points);
-    
-    let currentRank = 1;
-    rankings.forEach((entry, index) => {
-      if (index > 0 && rankings[index - 1].points > entry.points) {
-        currentRank = index + 1;
+        // Sort by points (descending) and assign ranks
+        rankings.sort((a, b) => b.points - a.points);
+        
+        let currentRank = 1;
+        rankings.forEach((entry, index) => {
+          if (index > 0 && rankings[index - 1].points > entry.points) {
+            currentRank = index + 1;
+          }
+          entry.rank = currentRank;
+        });
+
+        this.rankings = rankings;
+        this.totalParticipants = rankings.length;
+      },
+      error: (error) => {
+        console.error('Error loading responses:', error);
       }
-      entry.rank = currentRank;
     });
-
-    this.rankings = rankings;
-    this.totalParticipants = rankings.length;
   }
 
   goToAdmin(): void {
@@ -93,15 +99,19 @@ export class RankingComponent implements OnInit {
   }
 
   newQuiz(): void {
-    // Clear all data
-    this.gameService.endGame();
-    this.quizStateService.resetQuiz();
-    
-    // Clear storage
-    const jsonStorage = (this.gameService as any).jsonStorage;
-    jsonStorage.clearAll();
-    
-    this.router.navigate(['/admin']);
+    // Clear all data using API
+    this.gameService.endGame().subscribe({
+      next: () => {
+        this.quizStateService.resetQuiz();
+        this.router.navigate(['/admin']);
+      },
+      error: (error) => {
+        console.error('Error ending game:', error);
+        // Navigate anyway
+        this.quizStateService.resetQuiz();
+        this.router.navigate(['/admin']);
+      }
+    });
   }
 
   getRankingClass(rank: number): string {

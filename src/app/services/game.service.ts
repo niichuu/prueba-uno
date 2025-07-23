@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, of, map, tap, catchError } from 'rxjs';
 import { Question } from '../models/question.interface';
 import { UserResponse } from '../models/user-response.interface';
 import { GameResult } from '../models/game-result.interface';
-import { JsonStorageService } from './json-storage.service';
+import { ApiService } from './api.service';
 import { QuestionService } from './question.service';
 
 @Injectable({
@@ -25,33 +25,78 @@ export class GameService {
   public currentGame$ = this.currentGameSubject.asObservable();
 
   constructor(
-    private jsonStorage: JsonStorageService,
+    private apiService: ApiService,
     private questionService: QuestionService
-  ) {}
+  ) {
+    // Inicializar con datos del servidor
+    this.loadInitialData();
+  }
 
-  startGame(userId: string, userName: string): void {
-    this.currentGameSubject.next({
-      questions: [],
-      currentQuestionIndex: 0,
-      responses: [],
-      isGameActive: true
+  private loadInitialData(): void {
+    // Cargar estado del quiz y datos necesarios
+    this.apiService.getQuizStatus().subscribe({
+      next: (status) => {
+        if (status.isActive) {
+          this.loadActiveGameData();
+        }
+      },
+      error: (error) => console.error('Error loading initial data:', error)
     });
   }
 
-  submitAnswer(userId: string, userName: string, questionId: string, selectedOptionId: string): boolean {
+  private loadActiveGameData(): void {
+    // Si hay un quiz activo, cargar las preguntas
+    this.questionService.refreshQuestions().subscribe({
+      next: (questions) => {
+        const currentGame = this.currentGameSubject.value;
+        this.currentGameSubject.next({
+          ...currentGame,
+          questions,
+          isGameActive: true
+        });
+      },
+      error: (error) => console.error('Error loading game data:', error)
+    });
+  }
+
+  startGame(userId: string, userName: string): Observable<any> {
+    // Activar el quiz en el servidor
+    return this.apiService.updateQuizStatus({ isActive: true }).pipe(
+      tap(() => {
+        // Cargar las preguntas para el juego
+        this.questionService.refreshQuestions().subscribe({
+          next: (questions) => {
+            this.currentGameSubject.next({
+              questions,
+              currentQuestionIndex: 0,
+              responses: [],
+              isGameActive: true
+            });
+          },
+          error: (error) => console.error('Error loading questions:', error)
+        });
+      }),
+      catchError(error => {
+        console.error('Error starting game:', error);
+        throw error;
+      })
+    );
+  }
+
+  submitAnswer(userId: string, userName: string, questionId: string, selectedOptionId: string): Observable<boolean> {
     const currentGame = this.currentGameSubject.value;
     if (!currentGame.isGameActive) {
-      return false;
+      return of(false);
     }
 
     const question = this.questionService.getQuestionById(questionId);
     if (!question) {
-      return false;
+      return of(false);
     }
 
     const selectedOption = question.options.find(opt => opt.id === selectedOptionId);
     if (!selectedOption) {
-      return false;
+      return of(false);
     }
 
     const response: UserResponse = {
@@ -69,10 +114,14 @@ export class GameService {
 
     this.currentGameSubject.next(updatedGame);
 
-    // Guardar respuesta
-    this.jsonStorage.addItem(this.jsonStorage.storageKeys.RESPONSES, response);
-
-    return true;
+    // Guardar respuesta en el servidor
+    return this.apiService.saveResponse(response).pipe(
+      map(() => true),
+      catchError(error => {
+        console.error('Error saving response:', error);
+        return of(false);
+      })
+    );
   }
 
   getCurrentQuestion(): Question | null {
@@ -89,7 +138,7 @@ export class GameService {
     return currentGame.currentQuestionIndex >= currentGame.questions.length;
   }
 
-  calculateScore(userId: string, userName: string): GameResult {
+  calculateScore(userId: string, userName: string): Observable<GameResult> {
     const currentGame = this.currentGameSubject.value;
     let totalScore = 0;
     let correctAnswers = 0;
@@ -112,33 +161,42 @@ export class GameService {
       correctAnswers
     };
 
-    // Guardar resultado
-    this.jsonStorage.addItem(this.jsonStorage.storageKeys.RESULTS, result);
-
-    return result;
+    // No necesitamos guardar el resultado por separado ya que se calcula desde las respuestas
+    return of(result);
   }
 
-  endGame(): void {
-    this.currentGameSubject.next({
-      questions: [],
-      currentQuestionIndex: 0,
-      responses: [],
-      isGameActive: false
-    });
+  endGame(): Observable<any> {
+    // Desactivar el quiz en el servidor
+    return this.apiService.updateQuizStatus({ isActive: false }).pipe(
+      tap(() => {
+        this.currentGameSubject.next({
+          questions: [],
+          currentQuestionIndex: 0,
+          responses: [],
+          isGameActive: false
+        });
+      }),
+      catchError(error => {
+        console.error('Error ending game:', error);
+        throw error;
+      })
+    );
   }
 
-  getAllResponses(): UserResponse[] {
-    return this.jsonStorage.getData<UserResponse>(this.jsonStorage.storageKeys.RESPONSES);
+  getAllResponses(): Observable<UserResponse[]> {
+    return this.apiService.getResponses();
   }
 
-  hasUserAnswered(userId: string, questionId: string): boolean {
-    const responses = this.getAllResponses();
-    return responses.some(r => r.userId === userId && r.questionId === questionId);
+  hasUserAnswered(userId: string, questionId: string): Observable<boolean> {
+    return this.getAllResponses().pipe(
+      map(responses => responses.some(r => r.userId === userId && r.questionId === questionId))
+    );
   }
 
-  getUserResponse(userId: string, questionId: string): UserResponse | null {
-    const responses = this.getAllResponses();
-    return responses.find(r => r.userId === userId && r.questionId === questionId) || null;
+  getUserResponse(userId: string, questionId: string): Observable<UserResponse | null> {
+    return this.getAllResponses().pipe(
+      map(responses => responses.find(r => r.userId === userId && r.questionId === questionId) || null)
+    );
   }
 
   getGameProgress(): { current: number; total: number; percentage: number } {

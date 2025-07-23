@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import * as QRCode from 'qrcode-generator';
+import qrcode from 'qrcode-generator';
 
 import { QuestionService } from '../../services/question.service';
 import { QuizStateService, QuizStatus } from '../../services/quiz-state.service';
@@ -63,6 +63,8 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   createQuestion(): void {
+    console.log('🔍 Iniciando creación de pregunta...');
+    
     if (!this.isFormValid()) {
       alert('Por favor completa todos los campos');
       return;
@@ -74,14 +76,27 @@ export class AdminComponent implements OnInit, OnDestroy {
       { id: '3', text: this.option3, isCorrect: this.correctAnswer === 3 }
     ];
 
-    const question = this.questionService.createQuestion({
+    console.log('📝 Datos de la pregunta:', {
       title: this.questionTitle,
       options: options,
       points: 10
     });
 
-    this.currentQuestion = question;
-    alert('Pregunta creada exitosamente!');
+    this.questionService.createQuestion({
+      title: this.questionTitle,
+      options: options,
+      points: 10
+    }).subscribe({
+      next: (question) => {
+        console.log('✅ Pregunta creada exitosamente:', question);
+        this.currentQuestion = question;
+        alert('Pregunta creada exitosamente!');
+      },
+      error: (error) => {
+        console.error('❌ Error creating question:', error);
+        alert('Error al crear la pregunta: ' + (error.message || error));
+      }
+    });
   }
 
   startQuiz(): void {
@@ -90,8 +105,13 @@ export class AdminComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Activar el quiz en el servidor y en el estado local
     this.quizStateService.setCurrentQuestion(this.currentQuestion.id);
     this.quizStateService.setQuizStatus('active');
+    
+    // Generar el código QR cuando se activa el quiz
+    this.generateQRCode();
+    
     alert('Quiz iniciado! Los participantes pueden unirse escaneando el código QR.');
   }
 
@@ -109,7 +129,8 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   private generateQRCode(): void {
     try {
-      const qr = (QRCode as any)(0, 'M');
+      // Crear la instancia correcta de QRCode
+      const qr = qrcode(0, 'M');
       const contestantUrl = `${window.location.origin}/contestant`;
       qr.addData(contestantUrl);
       qr.make();
@@ -145,8 +166,11 @@ export class AdminComponent implements OnInit, OnDestroy {
       }
       
       this.qrCodeDataUrl = canvas.toDataURL();
+      console.log('🎯 QR Code generado exitosamente para:', contestantUrl);
+      console.log('📱 QR Data URL:', this.qrCodeDataUrl ? 'Generado' : 'Error');
     } catch (error) {
-      console.error('Error generando código QR:', error);
+      console.error('❌ Error generando código QR:', error);
+      this.qrCodeDataUrl = '';
     }
   }
 
