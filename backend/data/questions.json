@@ -1,0 +1,137 @@
+[
+  {
+    "id": "1",
+    "title": "¿Cuál es la capital de Francia?",
+    "options": [
+      {
+        "id": "1",
+        "text": "Madrid",
+        "isCorrect": false
+      },
+      {
+        "id": "2",
+        "text": "París",
+        "isCorrect": true
+      },
+      {
+        "id": "3",
+        "text": "Roma",
+        "isCorrect": false
+      },
+      {
+        "id": "4",
+        "text": "Berlín",
+        "isCorrect": false
+      }
+    ],
+    "points": 10
+  },
+  {
+    "id": "2",
+    "title": "¿Qué planeta es conocido como el planeta rojo?",
+    "options": [
+      {
+        "id": "1",
+        "text": "Venus",
+        "isCorrect": false
+      },
+      {
+        "id": "2",
+        "text": "Marte",
+        "isCorrect": true
+      },
+      {
+        "id": "3",
+        "text": "Júpiter",
+        "isCorrect": false
+      },
+      {
+        "id": "4",
+        "text": "Saturno",
+        "isCorrect": false
+      }
+    ],
+    "points": 10
+  },
+  {
+    "id": "3",
+    "title": "¿En qué año llegó el hombre a la luna?",
+    "options": [
+      {
+        "id": "1",
+        "text": "1967",
+        "isCorrect": false
+      },
+      {
+        "id": "2",
+        "text": "1968",
+        "isCorrect": false
+      },
+      {
+        "id": "3",
+        "text": "1969",
+        "isCorrect": true
+      },
+      {
+        "id": "4",
+        "text": "1970",
+        "isCorrect": false
+      }
+    ],
+    "points": 10
+  },
+  {
+    "id": "4",
+    "title": "¿Cuál es el océano más grande del mundo?",
+    "options": [
+      {
+        "id": "1",
+        "text": "Atlántico",
+        "isCorrect": false
+      },
+      {
+        "id": "2",
+        "text": "Índico",
+        "isCorrect": false
+      },
+      {
+        "id": "3",
+        "text": "Ártico",
+        "isCorrect": false
+      },
+      {
+        "id": "4",
+        "text": "Pacífico",
+        "isCorrect": true
+      }
+    ],
+    "points": 10
+  },
+  {
+    "id": "5",
+    "title": "¿Quién escribió 'Don Quijote de la Mancha'?",
+    "options": [
+      {
+        "id": "1",
+        "text": "García Lorca",
+        "isCorrect": false
+      },
+      {
+        "id": "2",
+        "text": "Miguel de Cervantes",
+        "isCorrect": true
+      },
+      {
+        "id": "3",
+        "text": "Lope de Vega",
+        "isCorrect": false
+      },
+      {
+        "id": "4",
+        "text": "Calderón de la Barca",
+        "isCorrect": false
+      }
+    ],
+    "points": 10
+  }
+]

@@ -40,3 +40,21 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Backend
+backend/node_modules/
+backend/npm-debug.log
+backend/yarn-error.log
+backend/.env
+backend/.env.local
+backend/.env.production
+backend/logs/
+backend/*.log
+backend/dist/
+backend/build/
+backend/coverage/
+backend/.nyc_output/
+backend/.cache/
+backend/.tmp/
+backend/.DS_Store
+backend/Thumbs.db

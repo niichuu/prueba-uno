@@ -78,7 +78,7 @@
   <div class="correct-answer-info" *ngIf="currentQuestion">
     <h3>✅ Respuesta Correcta:</h3>
     <div class="correct-answer">
-      {{ currentQuestion.options.find(opt => opt.isCorrect)?.text }}
+      {{ getCorrectAnswerText() }}
     </div>
   </div>
 

@@ -121,4 +121,10 @@ export class RankingComponent implements OnInit {
       default: return `${rank}°`;
     }
   }
+
+  getCorrectAnswerText(): string {
+    if (!this.currentQuestion) return '';
+    const correctOption = this.currentQuestion.options.find(opt => opt.isCorrect);
+    return correctOption ? correctOption.text : '';
+  }
 }
