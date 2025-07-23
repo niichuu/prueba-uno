@@ -10,7 +10,8 @@
     "test": "ng test",
     "test:headless": "ng test --watch=false --browsers=ChromeHeadless",
     "codespaces:setup": "npm install && echo '🚀 Codespaces setup complete! Run npm run start:codespaces to begin development.'",
-    "codespaces:info": "echo '📋 Available commands:' && echo '  npm run start:codespaces - Start development server for Codespaces' && echo '  npm run test:headless - Run tests in headless mode' && echo '  npm run build - Build for production' && echo '  ng generate component <name> - Generate new component'"
+    "codespaces:info": "echo '📋 Available commands:' && echo '  npm run start:codespaces - Start development server for Codespaces' && echo '  npm run test:headless - Run tests in headless mode' && echo '  npm run build - Build for production' && echo '  ng generate component <name> - Generate new component'",
+    "demo:info": "echo '🎮 Quiz Demo App' && echo 'Available commands:' && echo '  npm start - Start development server' && echo '  npm run demo:generate - Generate demo components'"
   },
   "private": true,
   "dependencies": {
