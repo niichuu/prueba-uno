@@ -1,0 +1,101 @@
+<div class="ranking-container">
+  <div class="header">
+    <h1>🏆 Ranking Final</h1>
+    <div class="quiz-info" *ngIf="currentQuestion">
+      <h2>Pregunta: {{ currentQuestion.title }}</h2>
+      <p>Total de participantes: {{ totalParticipants }}</p>
+    </div>
+  </div>
+
+  <!-- No participants -->
+  <div class="no-participants" *ngIf="rankings.length === 0">
+    <div class="message-card">
+      <h2>😔 Sin Participantes</h2>
+      <p>No hay participantes registrados para este quiz.</p>
+    </div>
+  </div>
+
+  <!-- Rankings Table -->
+  <div class="rankings-section" *ngIf="rankings.length > 0">
+    <div class="podium" *ngIf="rankings.length >= 3">
+      <div class="podium-item second" *ngIf="rankings[1]">
+        <div class="medal">🥈</div>
+        <div class="name">{{ rankings[1].userName }}</div>
+        <div class="points">{{ rankings[1].points }} pts</div>
+      </div>
+      
+      <div class="podium-item first" *ngIf="rankings[0]">
+        <div class="medal">🥇</div>
+        <div class="name">{{ rankings[0].userName }}</div>
+        <div class="points">{{ rankings[0].points }} pts</div>
+      </div>
+      
+      <div class="podium-item third" *ngIf="rankings[2]">
+        <div class="medal">🥉</div>
+        <div class="name">{{ rankings[2].userName }}</div>
+        <div class="points">{{ rankings[2].points }} pts</div>
+      </div>
+    </div>
+
+    <div class="rankings-table">
+      <div class="table-header">
+        <div class="col-rank">Posición</div>
+        <div class="col-name">Participante</div>
+        <div class="col-answer">Respuesta</div>
+        <div class="col-points">Puntos</div>
+      </div>
+      
+      <div 
+        class="table-row" 
+        *ngFor="let entry of rankings"
+        [ngClass]="getRankingClass(entry.rank)">
+        
+        <div class="col-rank">
+          <span class="rank-badge">{{ getRankingIcon(entry.rank) }}</span>
+        </div>
+        
+        <div class="col-name">
+          <span class="participant-name">{{ entry.userName }}</span>
+        </div>
+        
+        <div class="col-answer">
+          <span class="answer-text" [ngClass]="{ 'correct': entry.isCorrect, 'incorrect': !entry.isCorrect }">
+            {{ entry.selectedAnswer }}
+            <span class="result-icon">{{ entry.isCorrect ? '✅' : '❌' }}</span>
+          </span>
+        </div>
+        
+        <div class="col-points">
+          <span class="points-badge" [ngClass]="{ 'has-points': entry.points > 0 }">
+            {{ entry.points }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Correct Answer Info -->
+  <div class="correct-answer-info" *ngIf="currentQuestion">
+    <h3>✅ Respuesta Correcta:</h3>
+    <div class="correct-answer">
+      {{ currentQuestion.options.find(opt => opt.isCorrect)?.text }}
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <button 
+      type="button" 
+      (click)="goToAdmin()" 
+      class="btn btn-primary">
+      📊 Volver al Admin
+    </button>
+    
+    <button 
+      type="button" 
+      (click)="newQuiz()" 
+      class="btn btn-success">
+      🆕 Nuevo Quiz
+    </button>
+  </div>
+</div>

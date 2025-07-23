@@ -1,0 +1,148 @@
+<div class="admin-container">
+  <div class="header">
+    <h1>🎯 Panel de Administración - Quiz</h1>
+    <div class="status-badge" [ngClass]="'status-' + quizStatus">
+      {{ quizStatus === 'creating' ? 'Creando' : quizStatus === 'active' ? 'Activo' : 'Finalizado' }}
+    </div>
+  </div>
+
+  <!-- Formulario de creación de pregunta -->
+  <div class="form-section" *ngIf="quizStatus === 'creating'">
+    <h2>📝 Crear Pregunta</h2>
+    
+    <div class="form-group">
+      <label for="questionTitle">Pregunta:</label>
+      <input 
+        type="text" 
+        id="questionTitle"
+        [(ngModel)]="questionTitle" 
+        placeholder="Escribe tu pregunta aquí..."
+        class="form-input">
+    </div>
+
+    <div class="options-grid">
+      <div class="option-group">
+        <input 
+          type="radio" 
+          id="correct1" 
+          name="correctAnswer" 
+          [value]="1"
+          [(ngModel)]="correctAnswer">
+        <label for="correct1" class="radio-label">Correcta</label>
+        <input 
+          type="text" 
+          [(ngModel)]="option1" 
+          placeholder="Opción 1"
+          class="form-input">
+      </div>
+
+      <div class="option-group">
+        <input 
+          type="radio" 
+          id="correct2" 
+          name="correctAnswer" 
+          [value]="2"
+          [(ngModel)]="correctAnswer">
+        <label for="correct2" class="radio-label">Correcta</label>
+        <input 
+          type="text" 
+          [(ngModel)]="option2" 
+          placeholder="Opción 2"
+          class="form-input">
+      </div>
+
+      <div class="option-group">
+        <input 
+          type="radio" 
+          id="correct3" 
+          name="correctAnswer" 
+          [value]="3"
+          [(ngModel)]="correctAnswer">
+        <label for="correct3" class="radio-label">Correcta</label>
+        <input 
+          type="text" 
+          [(ngModel)]="option3" 
+          placeholder="Opción 3"
+          class="form-input">
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button 
+        type="button" 
+        (click)="createQuestion()" 
+        class="btn btn-primary">
+        ✅ Crear Pregunta
+      </button>
+      <button 
+        type="button" 
+        (click)="resetForm()" 
+        class="btn btn-secondary">
+        🔄 Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Pregunta creada -->
+  <div class="question-preview" *ngIf="currentQuestion && quizStatus === 'creating'">
+    <h3>📋 Pregunta Creada:</h3>
+    <div class="question-card">
+      <h4>{{ currentQuestion.title }}</h4>
+      <ul class="options-list">
+        <li 
+          *ngFor="let option of currentQuestion.options" 
+          [ngClass]="{ 'correct-option': option.isCorrect }">
+          {{ option.text }}
+          <span *ngIf="option.isCorrect" class="correct-mark">✓</span>
+        </li>
+      </ul>
+    </div>
+    
+    <button 
+      type="button" 
+      (click)="startQuiz()" 
+      class="btn btn-success btn-large">
+      🚀 Iniciar Quiz
+    </button>
+  </div>
+
+  <!-- Quiz activo con QR -->
+  <div class="quiz-active" *ngIf="quizStatus === 'active' && currentQuestion">
+    <h2>🔴 Quiz en Vivo</h2>
+    
+    <div class="active-content">
+      <div class="question-display">
+        <h3>Pregunta Actual:</h3>
+        <div class="question-card">
+          <h4>{{ currentQuestion.title }}</h4>
+          <ul class="options-list">
+            <li *ngFor="let option of currentQuestion.options">
+              {{ option.text }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="qr-section">
+        <h3>📱 Código QR para Participantes</h3>
+        <div class="qr-container">
+          <img 
+            *ngIf="qrCodeDataUrl" 
+            [src]="qrCodeDataUrl" 
+            alt="Código QR para unirse al quiz"
+            class="qr-code">
+          <p class="qr-instruction">
+            Los participantes deben escanear este código para unirse
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <button 
+      type="button" 
+      (click)="finishQuiz()" 
+      class="btn btn-danger btn-large">
+      🏁 Finalizar Quiz y Ver Ranking
+    </button>
+  </div>
+</div>

@@ -30,31 +30,41 @@ export class GameService {
   ) {}
 
   startGame(userId: string, userName: string): void {
-    const questions = this.questionService.getAllQuestions();
-    
     this.currentGameSubject.next({
-      questions: [...questions], // Copia para no mutar el original
+      questions: [],
       currentQuestionIndex: 0,
       responses: [],
       isGameActive: true
     });
   }
 
-  submitAnswer(userId: string, selectedOptionId: string): boolean {
+  submitAnswer(userId: string, userName: string, questionId: string, selectedOptionId: string): boolean {
     const currentGame = this.currentGameSubject.value;
-    if (!currentGame.isGameActive || currentGame.currentQuestionIndex >= currentGame.questions.length) {
+    if (!currentGame.isGameActive) {
+      return false;
+    }
+
+    const question = this.questionService.getQuestionById(questionId);
+    if (!question) {
+      return false;
+    }
+
+    const selectedOption = question.options.find(opt => opt.id === selectedOptionId);
+    if (!selectedOption) {
       return false;
     }
 
     const response: UserResponse = {
       userId,
-      selectedOptionId
+      userName,
+      selectedOptionId,
+      selectedOptionText: selectedOption.text,
+      questionId
     };
 
     const updatedGame = {
       ...currentGame,
-      responses: [...currentGame.responses, response],
-      currentQuestionIndex: currentGame.currentQuestionIndex + 1
+      responses: [...currentGame.responses, response]
     };
 
     this.currentGameSubject.next(updatedGame);
@@ -117,8 +127,18 @@ export class GameService {
     });
   }
 
-  getAllResults(): GameResult[] {
-    return this.jsonStorage.getData<GameResult>(this.jsonStorage.storageKeys.RESULTS);
+  getAllResponses(): UserResponse[] {
+    return this.jsonStorage.getData<UserResponse>(this.jsonStorage.storageKeys.RESPONSES);
+  }
+
+  hasUserAnswered(userId: string, questionId: string): boolean {
+    const responses = this.getAllResponses();
+    return responses.some(r => r.userId === userId && r.questionId === questionId);
+  }
+
+  getUserResponse(userId: string, questionId: string): UserResponse | null {
+    const responses = this.getAllResponses();
+    return responses.find(r => r.userId === userId && r.questionId === questionId) || null;
   }
 
   getGameProgress(): { current: number; total: number; percentage: number } {

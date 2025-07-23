@@ -1,0 +1,112 @@
+<div class="contestant-container">
+  <div class="header">
+    <h1>🎮 Quiz Participante</h1>
+    <div class="status-indicator" [ngClass]="{ 'active': isQuizActive, 'inactive': !isQuizActive }">
+      {{ isQuizActive ? '🟢 Quiz Activo' : '🔴 Quiz Inactivo' }}
+    </div>
+  </div>
+
+  <!-- Quiz Inactivo -->
+  <div class="quiz-inactive" *ngIf="!isQuizActive">
+    <div class="message-card">
+      <h2>⏳ Quiz No Disponible</h2>
+      <p>El quiz no está activo en este momento. Por favor espera a que el administrador inicie el quiz.</p>
+    </div>
+  </div>
+
+  <!-- Formulario de ingreso -->
+  <div class="join-form" *ngIf="isQuizActive && !hasJoined">
+    <div class="welcome-card">
+      <h2>👋 ¡Bienvenido al Quiz!</h2>
+      <p>Ingresa tu nombre para participar</p>
+      
+      <div class="form-group">
+        <input 
+          type="text" 
+          [(ngModel)]="userName" 
+          placeholder="Tu nombre"
+          class="name-input"
+          (keyup.enter)="joinQuiz()"
+          maxlength="30">
+      </div>
+      
+      <button 
+        type="button" 
+        (click)="joinQuiz()" 
+        class="btn btn-primary btn-large">
+        🚀 Ingresar al Quiz
+      </button>
+    </div>
+  </div>
+
+  <!-- Usuario unido - Esperando pregunta -->
+  <div class="waiting" *ngIf="hasJoined && !currentQuestion">
+    <div class="message-card">
+      <h2>⏳ Hola {{ userName }}!</h2>
+      <p>Estás conectado al quiz. Esperando la próxima pregunta...</p>
+      <div class="loading-spinner"></div>
+    </div>
+  </div>
+
+  <!-- Pregunta activa -->
+  <div class="question-section" *ngIf="hasJoined && currentQuestion && !hasAnswered">
+    <div class="question-card">
+      <div class="user-info">
+        <span class="user-name">👤 {{ userName }}</span>
+      </div>
+      
+      <h2 class="question-title">{{ currentQuestion.title }}</h2>
+      
+      <div class="answers-grid">
+        <button 
+          *ngFor="let option of currentQuestion.options"
+          type="button"
+          (click)="selectAnswer(option.id)"
+          class="answer-btn">
+          {{ option.text }}
+        </button>
+      </div>
+      
+      <div class="question-info">
+        💰 Puntos: {{ currentQuestion.points }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Resultado de la respuesta -->
+  <div class="result-section" *ngIf="hasAnswered && answerResult">
+    <div class="result-card" [ngClass]="{ 'correct': answerResult.isCorrect, 'incorrect': !answerResult.isCorrect }">
+      <div class="user-info">
+        <span class="user-name">👤 {{ userName }}</span>
+      </div>
+      
+      <div class="result-icon">
+        {{ answerResult.isCorrect ? '✅' : '❌' }}
+      </div>
+      
+      <h2 class="result-title">
+        {{ answerResult.isCorrect ? '¡Correcto!' : 'Incorrecto' }}
+      </h2>
+      
+      <p class="result-message">{{ answerResult.message }}</p>
+      
+      <div class="question-review" *ngIf="currentQuestion">
+        <h3>Pregunta: {{ currentQuestion.title }}</h3>
+        <div class="options-review">
+          <div 
+            *ngFor="let option of currentQuestion.options"
+            class="option-review"
+            [ngClass]="getButtonClass(option)">
+            {{ option.text }}
+            <span *ngIf="option.isCorrect" class="correct-mark">✓</span>
+            <span *ngIf="option.id === selectedAnswer && !option.isCorrect" class="selected-mark">Tu respuesta</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="waiting-message">
+        <p>⏳ Esperando la siguiente pregunta...</p>
+      </div>
+    </div>
+  </div>
+</div>
