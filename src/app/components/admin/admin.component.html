@@ -6,8 +6,8 @@
     </div>
   </div>
 
-  <!-- Formulario de creación de pregunta -->
-  <div class="form-section" *ngIf="quizStatus === 'creating'">
+  <!-- Formulario de creación de pregunta - SIEMPRE VISIBLE -->
+  <div class="form-section">
     <h2>📝 Crear Pregunta</h2>
     
     <div class="form-group">
@@ -84,7 +84,7 @@
   </div>
 
   <!-- Pregunta creada -->
-  <div class="question-preview" *ngIf="currentQuestion && quizStatus === 'creating'">
+  <div class="question-preview" *ngIf="currentQuestion">
     <h3>📋 Pregunta Creada:</h3>
     <div class="question-card">
       <h4>{{ currentQuestion.title }}</h4>
@@ -104,45 +104,37 @@
       class="btn btn-success btn-large">
       🚀 Iniciar Quiz
     </button>
-  </div>
 
-  <!-- Quiz activo con QR -->
-  <div class="quiz-active" *ngIf="quizStatus === 'active' && currentQuestion">
-    <h2>🔴 Quiz en Vivo</h2>
-    
-    <div class="active-content">
-      <div class="question-display">
-        <h3>Pregunta Actual:</h3>
-        <div class="question-card">
-          <h4>{{ currentQuestion.title }}</h4>
-          <ul class="options-list">
-            <li *ngFor="let option of currentQuestion.options">
-              {{ option.text }}
-            </li>
-          </ul>
-        </div>
+    <!-- QR Code - Se muestra cuando el quiz está activo -->
+    <div class="qr-section" *ngIf="quizStatus === 'active' && qrCodeDataUrl">
+      <h3>📱 Código QR para Participantes</h3>
+      <div class="qr-container">
+        <img 
+          [src]="qrCodeDataUrl" 
+          alt="Código QR para unirse al quiz"
+          class="qr-code">
+        <p class="qr-instruction">
+          Los participantes deben escanear este código para unirse
+        </p>
       </div>
-
-      <div class="qr-section">
-        <h3>📱 Código QR para Participantes</h3>
-        <div class="qr-container">
-          <img 
-            *ngIf="qrCodeDataUrl" 
-            [src]="qrCodeDataUrl" 
-            alt="Código QR para unirse al quiz"
-            class="qr-code">
-          <p class="qr-instruction">
-            Los participantes deben escanear este código para unirse
-          </p>
-        </div>
+      
+      <div class="link-section">
+        <button 
+          type="button" 
+          (click)="copyQuizLink()" 
+          class="btn btn-info">
+          📋 Copiar Link
+        </button>
+        <p class="link-instruction">
+          O copia el link directamente para compartir
+        </p>
       </div>
+      
+      <button 
+        type="button" 
+        (click)="finishQuiz()" 
+        class="btn btn-danger btn-large">
+        🏁 Finalizar Quiz y Ver Ranking
+      </button>
     </div>
-
-    <button 
-      type="button" 
-      (click)="finishQuiz()" 
-      class="btn btn-danger btn-large">
-      🏁 Finalizar Quiz y Ver Ranking
-    </button>
-  </div>
 </div>

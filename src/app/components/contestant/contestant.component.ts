@@ -1,11 +1,11 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { QuestionService } from '../../services/question.service';
 import { GameService } from '../../services/game.service';
-import { QuizStateService } from '../../services/quiz-state.service';
 import { Question, QuestionOption } from '../../models/question.interface';
 
 @Component({
@@ -20,44 +20,32 @@ export class ContestantComponent implements OnInit, OnDestroy {
   userName: string = '';
   userId: string = '';
   hasJoined: boolean = false;
-  hasAnswered: boolean = false;
   
   // Question state
   currentQuestion: Question | null = null;
   selectedAnswer: string = '';
-  answerResult: { isCorrect: boolean; message: string } | null = null;
-  
-  // Quiz state
-  isQuizActive: boolean = false;
+  hasAnswered: boolean = false;
+  answerResult: { isCorrect: boolean; message: string; correctOption: QuestionOption } | null = null;
   
   private subscriptions: Subscription[] = [];
 
   constructor(
+    private route: ActivatedRoute,
     private questionService: QuestionService,
-    private gameService: GameService,
-    private quizStateService: QuizStateService
+    private gameService: GameService
   ) {}
 
   ngOnInit(): void {
-    // Subscribe to quiz status
+    // Leer el questionId de la URL
     this.subscriptions.push(
-      this.quizStateService.status$.subscribe(status => {
-        this.isQuizActive = status === 'active';
-        if (!this.isQuizActive) {
-          this.currentQuestion = null;
-        }
-      })
-    );
-
-    // Subscribe to current question
-    this.subscriptions.push(
-      this.quizStateService.currentQuestion$.subscribe(questionId => {
-        if (questionId && this.isQuizActive) {
-          this.currentQuestion = this.questionService.getQuestionById(questionId);
-          // Check if user already answered
-          if (this.userId) {
-            this.checkUserAnswer();
-          }
+      this.route.queryParams.subscribe(params => {
+        const questionId = params['questionId'];
+        
+        if (questionId) {
+          console.log('🔍 Loading question ID:', questionId);
+          this.loadQuestion(questionId);
+        } else {
+          console.error('❌ No questionId provided in URL');
         }
       })
     );
@@ -67,116 +55,112 @@ export class ContestantComponent implements OnInit, OnDestroy {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
+  private loadQuestion(questionId: string): void {
+    this.questionService.getQuestionByIdAsync(questionId).subscribe({
+      next: (question) => {
+        if (question) {
+          this.currentQuestion = question;
+          console.log('✅ Question loaded:', question.title);
+        } else {
+          console.error('❌ Question not found:', questionId);
+        }
+      },
+      error: (error) => {
+        console.error('❌ Error loading question:', error);
+      }
+    });
+  }
+
   joinQuiz(): void {
     if (!this.userName.trim()) {
       alert('Por favor ingresa tu nombre');
       return;
     }
 
-    if (!this.isQuizActive) {
-      alert('El quiz no está activo en este momento');
+    if (!this.currentQuestion) {
+      alert('La pregunta no está disponible');
       return;
     }
 
+    // Generar ID único para el usuario
     this.userId = this.generateUserId();
-    this.hasJoined = true;
-    this.checkUserAnswer();
     
-    // Start game for this user
-    this.gameService.startGame(this.userId, this.userName.trim()).subscribe({
-      next: () => {
-        console.log('Game started successfully');
+    console.log('🚀 Registrando participante:', {
+      userName: this.userName,
+      userId: this.userId,
+      questionId: this.currentQuestion.id
+    });
+
+    // Registrar participante en la API
+    this.gameService.startGame(this.userId, this.userName).subscribe({
+      next: (response: any) => {
+        console.log('✅ Participante registrado exitosamente:', response);
+        this.hasJoined = true;
       },
-      error: (error) => {
-        console.error('Error starting game:', error);
+      error: (error: any) => {
+        console.error('❌ Error registrando participante:', error);
+        // Permitir continuar aunque falle el registro
+        this.hasJoined = true;
       }
     });
   }
 
   selectAnswer(optionId: string): void {
-    if (this.hasAnswered || !this.currentQuestion || !this.userId) {
+    if (this.hasAnswered || !this.currentQuestion) {
       return;
     }
 
     this.selectedAnswer = optionId;
-    
-    // Submit answer
-    this.gameService.submitAnswer(
-      this.userId,
-      this.userName,
-      this.currentQuestion.id,
-      optionId
-    ).subscribe({
-      next: (success) => {
-        if (success) {
-          this.hasAnswered = true;
-          this.showAnswerResult(optionId);
-        }
-      },
-      error: (error) => {
-        console.error('Error submitting answer:', error);
-      }
-    });
-  }
+    this.hasAnswered = true;
 
-  private showAnswerResult(selectedOptionId: string): void {
-    if (!this.currentQuestion) return;
+    // Encontrar la opción seleccionada y la correcta
+    const selectedOption = this.currentQuestion.options.find(o => o.id === optionId);
+    const correctOption = this.currentQuestion.options.find(o => o.isCorrect);
 
-    const selectedOption = this.currentQuestion.options.find(opt => opt.id === selectedOptionId);
-    const correctOption = this.currentQuestion.options.find(opt => opt.isCorrect);
-    
     if (selectedOption && correctOption) {
-      const isCorrect = selectedOption.isCorrect;
       this.answerResult = {
-        isCorrect,
-        message: isCorrect 
-          ? `¡Correcto! Ganaste ${this.currentQuestion.points} puntos.`
-          : `Incorrecto. La respuesta correcta era: ${correctOption.text}`
+        isCorrect: selectedOption.isCorrect,
+        message: selectedOption.isCorrect 
+          ? `¡Correcto! La respuesta es: ${selectedOption.text}` 
+          : `Incorrecto. La respuesta correcta es: ${correctOption.text}`,
+        correctOption
       };
+
+      console.log('📊 Answer result:', this.answerResult);
+
+      // Enviar respuesta a la API
+      this.gameService.submitAnswer(
+        this.userId, 
+        this.userName, 
+        this.currentQuestion.id, 
+        optionId
+      ).subscribe({
+        next: (success: boolean) => {
+          console.log('✅ Respuesta enviada exitosamente:', success);
+        },
+        error: (error: any) => {
+          console.error('❌ Error enviando respuesta:', error);
+        }
+      });
     }
   }
 
-  private checkUserAnswer(): void {
-    if (!this.userId || !this.currentQuestion) return;
-    
-    this.gameService.getUserResponse(this.userId, this.currentQuestion.id).subscribe({
-      next: (userResponse) => {
-        if (userResponse) {
-          this.hasAnswered = true;
-          this.selectedAnswer = userResponse.selectedOptionId;
-          this.showAnswerResult(userResponse.selectedOptionId);
-        } else {
-          this.hasAnswered = false;
-          this.answerResult = null;
-        }
-      },
-      error: (error) => {
-        console.error('Error checking user answer:', error);
-        this.hasAnswered = false;
-        this.answerResult = null;
-      }
-    });
+  // Método para obtener clase CSS del botón
+  getButtonClass(option: QuestionOption): string {
+    if (!this.hasAnswered) {
+      return '';
+    }
+
+    if (option.isCorrect) {
+      return 'correct';
+    } else if (option.id === this.selectedAnswer) {
+      return 'incorrect';
+    }
+
+    return 'disabled';
   }
 
   private generateUserId(): string {
-    return `contestant_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
-  }
-
-  getButtonClass(option: QuestionOption): string {
-    const baseClass = 'answer-btn';
-    
-    if (!this.hasAnswered) {
-      return baseClass;
-    }
-    
-    if (option.id === this.selectedAnswer) {
-      return `${baseClass} ${option.isCorrect ? 'correct' : 'incorrect'}`;
-    }
-    
-    if (option.isCorrect) {
-      return `${baseClass} correct-answer`;
-    }
-    
-    return `${baseClass} disabled`;
+    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
   }
 }

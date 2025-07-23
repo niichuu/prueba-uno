@@ -42,9 +42,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.quizStateService.status$.subscribe(status => {
         this.quizStatus = status;
-        if (status === 'active') {
-          this.generateQRCode();
-        }
+        // El QR se genera cuando se inicia el quiz
       })
     );
 
@@ -105,6 +103,14 @@ export class AdminComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.currentQuestion.id) {
+      alert('Error: La pregunta no tiene un ID válido');
+      console.error('❌ Pregunta sin ID:', this.currentQuestion);
+      return;
+    }
+
+    console.log('🚀 Iniciando quiz con pregunta:', this.currentQuestion);
+    
     // Activar el quiz en el servidor y en el estado local
     this.quizStateService.setCurrentQuestion(this.currentQuestion.id);
     this.quizStateService.setQuizStatus('active');
@@ -129,9 +135,19 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   private generateQRCode(): void {
     try {
-      // Crear la instancia correcta de QRCode
+      if (!this.currentQuestion || !this.currentQuestion.id) {
+        console.error('❌ No hay pregunta actual o ID faltante:', this.currentQuestion);
+        return;
+      }
+
+      const baseUrl = window.location.origin;
+      // ✅ Incluir ID específico de la pregunta en la URL
+      const contestantUrl = `${baseUrl}/contestant?questionId=${this.currentQuestion.id}`;
+      
+      console.log('🎯 Generando QR para pregunta ID:', this.currentQuestion.id);
+      console.log('📱 URL completa:', contestantUrl);
+      
       const qr = qrcode(0, 'M');
-      const contestantUrl = `${window.location.origin}/contestant`;
       qr.addData(contestantUrl);
       qr.make();
       
@@ -166,8 +182,8 @@ export class AdminComponent implements OnInit, OnDestroy {
       }
       
       this.qrCodeDataUrl = canvas.toDataURL();
-      console.log('🎯 QR Code generado exitosamente para:', contestantUrl);
-      console.log('📱 QR Data URL:', this.qrCodeDataUrl ? 'Generado' : 'Error');
+      console.log('🎯 QR Code generado exitosamente para pregunta:', this.currentQuestion?.id);
+      console.log('📱 URL del QR:', contestantUrl);
     } catch (error) {
       console.error('❌ Error generando código QR:', error);
       this.qrCodeDataUrl = '';
@@ -180,5 +196,61 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.option2 = '';
     this.option3 = '';
     this.correctAnswer = 1;
+  }
+
+  copyQuizLink(): void {
+    if (!this.currentQuestion || !this.currentQuestion.id) {
+      alert('No hay una pregunta activa para copiar');
+      return;
+    }
+
+    const baseUrl = window.location.origin;
+    const contestantUrl = `${baseUrl}/contestant?questionId=${this.currentQuestion.id}`;
+    
+    // Intentar usar el API moderno del portapapeles
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(contestantUrl).then(() => {
+        alert('¡Link copiado al portapapeles!');
+        console.log('📋 Link copiado:', contestantUrl);
+      }).catch(err => {
+        console.error('❌ Error con navigator.clipboard:', err);
+        this.fallbackCopyToClipboard(contestantUrl);
+      });
+    } else {
+      // Usar método fallback
+      this.fallbackCopyToClipboard(contestantUrl);
+    }
+  }
+
+  private fallbackCopyToClipboard(text: string): void {
+    try {
+      // Crear un elemento de texto temporal
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      
+      // Seleccionar y copiar el texto
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        alert('¡Link copiado al portapapeles!');
+        console.log('📋 Link copiado (fallback):', text);
+      } else {
+        throw new Error('execCommand failed');
+      }
+    } catch (err) {
+      console.error('❌ Error con fallback copy:', err);
+      // Último recurso: mostrar el link para copiar manualmente
+      const userCopied = prompt('No se pudo copiar automáticamente. Copia este link manualmente:', text);
+      if (userCopied !== null) {
+        console.log('📋 Link mostrado para copia manual:', text);
+      }
+    }
   }
 }

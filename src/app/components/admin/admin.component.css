@@ -177,6 +177,16 @@
   transform: translateY(-2px);
 }
 
+.btn-info {
+  background: #3498db;
+  color: white;
+}
+
+.btn-info:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
 .btn-large {
   padding: 16px 32px;
   font-size: 1.2rem;
@@ -312,4 +322,15 @@
     grid-column: 2;
     grid-row: 1 / span 2;
   }
+}
+
+.link-section {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.link-instruction {
+  margin: 10px 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
 }
